@@ -1,0 +1,4 @@
+1,Geladeira,2500,10
+2,Ventilador,174,10
+3,Fogão,879,10
+4,Ferro de Passar,225,10

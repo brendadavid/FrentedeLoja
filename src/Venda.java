@@ -1,3 +1,4 @@
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +9,7 @@ public class Venda {
     private double desconto=0;
     private double imposto;
     private double valorDaVenda;
-    private String status; //(efetuada ou cancelada)  transformar em enumeration
+    private StatusEnum status;
 
     private List<ItemDeVenda> itens;
 
@@ -60,11 +61,11 @@ public class Venda {
         return numero;
     }
 
-    public void setStatusVenda(String status){
+    public void setStatusVenda(StatusEnum status){
         this.status = status;
     }
 
-    public String getStatusVenda(){
+    public StatusEnum getStatusVenda(){
         return status;
     }
 

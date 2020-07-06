@@ -1,8 +1,9 @@
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class HistoricoVendas {
@@ -36,13 +37,13 @@ public class HistoricoVendas {
     public void cancelaVenda(int numero, Estoque estoque) {
         //atualiza o estoque e muda o status da venda
         getVenda(numero).reposicaoEstoque(estoque);
-        getVenda(numero).setStatusVenda("Cancelada");
+        getVenda(numero).setStatusVenda(StatusEnum.CANCELADA);
         System.out.println("Venda Cancelada!\n");
     }
 
     public void listarVendasEfetuadas() {
         for (Venda venda : vendas) {
-            if (venda.getStatusVenda() == "Efetuada") {
+            if (StatusEnum.EFETIVADA.equals(venda.getStatusVenda())) {
                 System.out.println(venda.toString());
             }
         }
@@ -50,7 +51,7 @@ public class HistoricoVendas {
 
     public void listarVendasCanceladas() {
         for (Venda venda : vendas) {
-            if (venda.getStatusVenda() == "Cancelada") {
+            if (StatusEnum.EFETIVADA.equals(venda.getStatusVenda())) {
                 System.out.println(venda.toString());
             }
         }
@@ -59,7 +60,7 @@ public class HistoricoVendas {
     public double getFaturamentoBruto() {
         double valorBruto = 0.0;
         for (Venda venda : vendas) {
-            if (venda.getStatusVenda() == "Efetuada") {
+            if (StatusEnum.EFETIVADA.equals(venda.getStatusVenda())) {
                 valorBruto += venda.getValorDaVenda();
             }
         }
@@ -69,7 +70,7 @@ public class HistoricoVendas {
     public double getFaturamentoLiquido() {
         double valorLiquido = 0.0;
         for (Venda venda : vendas) {
-            if (venda.getStatusVenda() == "Efetuada") {
+            if (StatusEnum.EFETIVADA.equals(venda.getStatusVenda())) {
                 valorLiquido += venda.getValorDaVenda() - venda.getImposto();
             }
 
@@ -84,20 +85,23 @@ public class HistoricoVendas {
         ValorMedio.ifPresent(System.out::println);
     }
 
-    public List<ItemDeVenda> getCincoItensMaisVendidos() {
+    public List<MaisVendido> getCincoItensMaisVendidos() {
         return this.vendas.stream()
             .flatMap(item -> item.getItensDeVenda().stream())
-            //Coleta os dados em um mapa onde a chave é o objeto e o valor é a contagem de ocorrencias do objeto
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+            .collect(Collectors.toMap(
+                item -> item.getProduto().getDescricao(), //mapeia o produto como chave
+                ItemDeVenda::getQuantidade, //quantidade vai ser o valor do mapa
+                Integer::sum //em caso de conflito no valor da chave ele soma os valores
+            ))
             //pega o conjunto dos dados do mapa da linha anterior
             .entrySet()
             .stream()
             //ordena comparando o valor dos no mapa (contagem de ocorrencias do objeto)
-            .sorted(Map.Entry.comparingByValue())
+            .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
             //pega somente as 5 maiores ocorrencias
             .limit(5)
             //mapeia pra pegar só o o objeto
-            .map(Map.Entry::getKey)
+            .map(item -> new MaisVendido(item.getKey(), item.getValue()))
             //trnasforma em uma lista
             .collect(Collectors.toList());
     }

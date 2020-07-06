@@ -3,7 +3,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class App {
 
@@ -25,7 +28,7 @@ public class App {
         System.out.println("3 - Relatórios");
         System.out.println("4 - Sair\n");
 
-        int opcao = scanner.nextInt();
+        int opcao = readNextInt();
         switch (opcao) {
             case 1:
                 mostraMenuVendas();
@@ -44,6 +47,19 @@ public class App {
         }
     }
 
+    private static int readNextInt() {
+        String input = scanner.nextLine();
+        if ("X".equals(input)) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            System.out.println("Valor Invalido, Digite novamente (Digite x para sair)");
+            return readNextInt();
+        }
+    }
+
     private static void mostraMenuVendas() {
         System.out.println("Menu de vendas:");
         System.out.println("1 - Realizar venda");
@@ -52,7 +68,7 @@ public class App {
         System.out.println("4 - Imprimir segunda via recibo");
         System.out.println("5 - Voltar\n");
 
-        int opcao = scanner.nextInt();
+        int opcao = readNextInt();
         switch (opcao) {
             case 1:
                 realizarVenda();
@@ -86,7 +102,7 @@ public class App {
         System.out.println("3 - Repor produto em estoque");
         System.out.println("4 - Voltar\n");
 
-        int opcao = scanner.nextInt();
+        int opcao = readNextInt();
         switch (opcao) {
             case 1:
                 cadastrarProduto();
@@ -116,7 +132,7 @@ public class App {
         System.out.println("4 - Listar vendas canceladas");
         System.out.println("5 - Voltar\n");
 
-        int opcao = scanner.nextInt();
+        int opcao = readNextInt();
         switch (opcao) {
             case 1:
                 mostraFaturamento();
@@ -128,7 +144,8 @@ public class App {
                 mostraMenuRelatorios();
                 break;
             case 3:
-                // Mostra os 5 produtos mais vendidos em ordem decrescente
+                historicoVendas.getCincoItensMaisVendidos().forEach(System.out::println);
+                mostraMenuRelatorios();
                 break;
             case 4:
                 listarVendasCanceladas();
@@ -167,16 +184,16 @@ public class App {
         while (registrando){
 
             System.out.println("Escolha uma opção:  1-Adicionar Item  2-Remover Item  3-Finalizar");
-            int opcao = scanner.nextInt();
+            int opcao = readNextInt();
 
             //insere novo item na venda
             if(opcao==1){
                 System.out.println("Digite o código do produto: ");
-                int codigo = scanner.nextInt();
+                int codigo = readNextInt();
 
                 while (estoque.getProduto(codigo) == null) {
                     System.out.println("O código do produto não existe, digite um novo código:");
-                    codigo = scanner.nextInt();
+                    codigo = readNextInt();
                 }
 
                 int quantidadeDisponivel = estoque.getQuantidadeEstoque(codigo);
@@ -184,8 +201,8 @@ public class App {
                 int quantidadeDesejada;
                 do {
                     System.out.println("Qual a quantidade desejada?");
-                    System.out.println("Disponível: "+ quantidadeDisponivel);
-                    quantidadeDesejada = scanner.nextInt();
+                    System.out.println("Disponível: " + quantidadeDisponivel);
+                    quantidadeDesejada = readNextInt();
 
                     if (quantidadeDesejada > quantidadeDisponivel){
                         System.out.println("Quantidade indisponível!");
@@ -200,12 +217,12 @@ public class App {
             else if (opcao==2){
                 if (quantidadeItens>0){
                     System.out.println("Digite o código do produto: ");
-                    int codigo = scanner.nextInt();
+                    int codigo = readNextInt();
 
                     while (estoque.getProduto(codigo) == null || venda.getItemVenda(codigo) == null){
                         System.out.println("O código do produto não existe ou o item não foi inserido na venda!");
                         System.out.println("Digite um novo código:");
-                        codigo = scanner.nextInt();
+                        codigo = readNextInt();
                     }
 
                     //remove item inserido na venda
@@ -228,14 +245,14 @@ public class App {
 
     public static void finalizarVenda(Venda venda){
         //Seta a variável de status para incompleta
-        venda.setStatusVenda("Incompleta!");
+        venda.setStatusVenda(StatusEnum.INCOMPLETA);
         //calcula o subtotal da venda
         venda.setSubTotal();
 
         //aplica desconto ou não
         System.out.println("Deseja aplicar desconto?  1-Sim  2-Não");
         int opcao;
-        opcao = scanner.nextInt();
+        opcao = readNextInt();
         if (opcao == 1){
             venda.setDesconto();
         }
@@ -245,10 +262,10 @@ public class App {
         System.out.println(venda.toString());
 
         System.out.println("Deseja concluir a compra?  1-Sim  2-Cancelar compra");
-        opcao = scanner.nextInt();
+        opcao = readNextInt();
 
         if (opcao == 1){
-            venda.setStatusVenda("Efetuada");
+            venda.setStatusVenda(StatusEnum.EFETIVADA);
 
             //cadastra a venda no histórico de vendas
             historicoVendas.cadastraVendas(venda);
@@ -261,32 +278,39 @@ public class App {
     }
 
     //item 2
-    public static void cancelarVenda(){
+    public static void cancelarVenda() {
+        if (historicoVendas.getQuantidadeVendas() < 1) {
+            System.out.println("Nenhuma venda realizada!\n");
+        } else {
+            //lista todas vendas efetuadas
+            historicoVendas.listarVendasEfetuadas();
+            System.out.println("Digite o número da venda:");
+            int numero = readNextInt();
 
-        //lista todas vendas efetuadas
-        historicoVendas.listarVendasEfetuadas();
-        System.out.println("Digite o número da venda:");
-        int numero = scanner.nextInt();
+            while (historicoVendas.getVenda(numero) == null) {
+                System.out.println("O número da venda não existe, digite um novo número:");
+                numero = readNextInt();
+            }
 
-        while (historicoVendas.getVenda(numero) == null) {
-            System.out.println("O número da venda não existe, digite um novo número:");
-            numero = scanner.nextInt();
+            //cancela a venda e efetua a reposição no estoque
+            historicoVendas.cancelaVenda(numero, estoque);
         }
-
-        //cancela a venda e efetua a reposição no estoque
-        historicoVendas.cancelaVenda(numero,estoque);
     }
 
     //item 3
     public static void listarVendas(){
 
+        List<Venda> efetivadas = historicoVendas.getVendas().stream()
+            .filter(venda -> StatusEnum.EFETIVADA.equals(venda.getStatusVenda()))
+            .collect(Collectors.toList());
+
         //lista as últimas 5 vendas realizadas
-        int tamanho = historicoVendas.getVendas().size();
+        int tamanho = efetivadas.size();
         int itens = 0;
 
         if (tamanho > 0){
             while (tamanho > 0 && itens <= 4) {
-                System.out.println(historicoVendas.getVendas().get(tamanho - 1));
+                System.out.println(efetivadas.get(tamanho - 1));
                 tamanho -= 1;
                 itens += 1;
             }
@@ -296,16 +320,19 @@ public class App {
     }
 
     //item 4
-    public static void imprimirRecibo(){
+    public static void imprimirRecibo() {
+        if (historicoVendas.getQuantidadeVendas() < 1) {
+            System.out.println("Nenhuma venda realizada!\n");
+        } else {
+            System.out.println("Digite o número da venda:");
+            int numero = readNextInt();
 
-        System.out.println("Digite o número da venda:");
-        int numero = scanner.nextInt();
-
-        while (historicoVendas.getVenda(numero) == null) {
-            System.out.println("O número da venda não existe, digite um novo número:");
-            numero = scanner.nextInt();
+            while (historicoVendas.getVenda(numero) == null) {
+                System.out.println("O número da venda não existe, digite um novo número:");
+                numero = readNextInt();
+            }
+            System.out.println(historicoVendas.getVenda(numero));
         }
-        System.out.println(historicoVendas.getVenda(numero));
     }
 
 
@@ -323,7 +350,7 @@ public class App {
             double precoUnit = scanner.nextDouble();
 
             System.out.println("Digite a quantidade inicial do produto:");
-            int qtdInicial = scanner.nextInt();
+            int qtdInicial = readNextInt();
 
             //cadastra um novo produto e a quantidade inicial em estoque
             Produto produto = new Produto(estoque.getQuantidadeProdutos()+1, descricao, precoUnit);
@@ -331,7 +358,7 @@ public class App {
             System.out.println("Produto cadastrado!");
 
             System.out.println("Deseja cadastrar outro produto? 1-Sim 2-Não");
-            opcao = scanner.nextInt();
+            opcao = readNextInt();
         }
     }
 
@@ -346,20 +373,20 @@ public class App {
         while (opcao == 1) {
             listarProdutos();
             System.out.println("Digite o código do produto:");
-            int codProd = scanner.nextInt();
+            int codProd = readNextInt();
             while (estoque.getProduto(codProd) == null) {
                 System.out.println("O código do produto não existe, digite um novo código:");
-                codProd = scanner.nextInt();
+                codProd = readNextInt();
             }
 
             System.out.println("Digite a quantidade de produtos:");
-            int qtdReposicao = scanner.nextInt();
+            int qtdReposicao = readNextInt();
 
             //aumenta a quantidade de um produto no estoque
             estoque.reposicaoEstoque(codProd, qtdReposicao);
 
             System.out.println("Deseja repor outro produto? 1-Sim 2-Não");
-            opcao = scanner.nextInt();
+            opcao = readNextInt();
         }
 
     }
@@ -378,45 +405,28 @@ public class App {
         historicoVendas.listarVendasCanceladas();
     }
 
-
-
-
-
-
     //preenche o estoque com os produtos e sua quantidade
     private static void popularEstoque(){
-
         // Obtem o caminho para o diretório corrente
         String currDir = Paths.get("").toAbsolutePath().toString();
         // Monta o nome do arquivo
-        String nameComplete = currDir+"\\"+"estoque.txt";
+        String nameComplete = currDir + "\\" + "estoque.txt";
         // Cria acesso ao "diretorio" da mídia (disco)
         Path path = Paths.get(nameComplete);
 
         String linha = "";
         // Usa a classe scanner para fazer a leitura do arquivo
-        try (Scanner sc = new Scanner(Files.newBufferedReader(path, StandardCharsets.UTF_8))){
-            linha = sc.nextLine();
-        }catch (IOException x){
-            System.err.format("Erro de E/S: %s%n", x);
-        }
-        String[] dados = linha.split(",");
+        try (Scanner sc = new Scanner(Files.newBufferedReader(path, StandardCharsets.UTF_8))) {
+            while (sc.hasNextLine()) {
+                linha = sc.nextLine();
+                String[] dados = linha.split(",");
+                Produto produto = new Produto(Integer.parseInt(dados[0]), dados[1], Integer.parseInt(dados[2]));
+                estoque.cadastraProduto(produto, Integer.parseInt(dados[3]));
+            }
 
-        for(int i = 0; i < dados.length; i += 4) {
-            Produto produto = new Produto(Integer.parseInt(dados[i]), dados[i + 1], (double)Integer.parseInt(dados[i + 2]));
-            estoque.cadastraProduto(produto, Integer.parseInt(dados[i + 3]));
+        } catch (IOException x) {
+            System.err.format("Erro de E/S: %s%n", x);
         }
     }
 
-
-    /*private static void popularEstoque() {
-        GerenciadorArquivos.leituraArquivo(linha -> {
-            String[] dados = linha.split(",");
-            estoque.cadastraProduto(new Produto(
-                            Integer.parseInt(dados[0]),
-                            dados[1],
-                            Integer.parseInt(dados[2])),
-                    Integer.parseInt(dados[3]));
-        });
-    }*/
 }
