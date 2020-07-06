@@ -45,6 +45,9 @@ public class Estoque {
         return null;
     }
 
+    public List<ItemDeEstoque> getItens() {
+        return itens;
+    }
 
     @Override
     public String toString() {

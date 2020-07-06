@@ -1,4 +1,7 @@
-1,Geladeira,2500,10
-2,Ventilador,174,10
-3,Fogão,879,10
-4,Ferro de Passar,225,10
+1,Geladeira,2500.0,10
+2,Ventilador,174.0,10
+3,Fogão,879.0,10
+4,Ferro de Passar,225.0,10
+5,pente da barbie,20.5,3
+6,Copo do batman,5.05,4
+7,JetSki do Homem aranha,7200.0,3

@@ -35,4 +35,8 @@ public class ItemDeEstoque {
                 ", quantidade=" + quantidade +
                 '}';
     }
+
+    public String toSaveLine(){
+        return this.getProduto().getCodigo() + "," + this.getProduto().getDescricao() + "," + this.getProduto().getPrecoUnitario() + "," + this.getQuantidade();
+    }
 }

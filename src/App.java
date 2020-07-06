@@ -1,9 +1,9 @@
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -40,9 +40,11 @@ public class App {
                 mostraMenuRelatorios();
                 break;
             case 4:
+                salvaEstoque();
                 break;
             default:
                 System.out.println("Opção inválida");
+                salvaEstoque();
                 break;
         }
     }
@@ -51,13 +53,14 @@ public class App {
         String input = scanner.nextLine();
         if ("X".equals(input)) {
             return -1;
+        } else if (!"".equals(input)) {
+            try {
+                return Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                System.out.println("Valor Invalido, Digite novamente (Digite x para sair)");
+            }
         }
-        try {
-            return Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            System.out.println("Valor Invalido, Digite novamente (Digite x para sair)");
-            return readNextInt();
-        }
+        return readNextInt();
     }
 
     private static void mostraMenuVendas() {
@@ -87,10 +90,12 @@ public class App {
                 mostraMenuVendas();
                 break;
             case 5:
+                salvaEstoque();
                 mostraMenuPrincipal();
                 break;
             default:
                 System.out.println("Opção inválida");
+                salvaEstoque();
                 break;
         }
     }
@@ -344,7 +349,7 @@ public class App {
         int opcao = 1;
         while (opcao == 1) {
             System.out.println("Digite a descrição do produto:");
-            String descricao = scanner.next();
+            String descricao = scanner.nextLine();
 
             System.out.println("Digite o preço unitário do produto:");
             double precoUnit = scanner.nextDouble();
@@ -406,23 +411,39 @@ public class App {
     }
 
     //preenche o estoque com os produtos e sua quantidade
-    private static void popularEstoque(){
-        // Obtem o caminho para o diretório corrente
-        String currDir = Paths.get("").toAbsolutePath().toString();
-        // Monta o nome do arquivo
-        String nameComplete = currDir + "\\" + "estoque.txt";
-        // Cria acesso ao "diretorio" da mídia (disco)
-        Path path = Paths.get(nameComplete);
-
-        String linha = "";
+    private static void popularEstoque() {
+        Path path = getPathArquivo();
+        String linha;
         // Usa a classe scanner para fazer a leitura do arquivo
         try (Scanner sc = new Scanner(Files.newBufferedReader(path, StandardCharsets.UTF_8))) {
             while (sc.hasNextLine()) {
                 linha = sc.nextLine();
                 String[] dados = linha.split(",");
-                Produto produto = new Produto(Integer.parseInt(dados[0]), dados[1], Integer.parseInt(dados[2]));
+                Produto produto = new Produto(Integer.parseInt(dados[0]), dados[1], Double.parseDouble(dados[2]));
                 estoque.cadastraProduto(produto, Integer.parseInt(dados[3]));
             }
+
+        } catch (IOException x) {
+            System.err.format("Erro de E/S: %s%n", x);
+        }
+    }
+
+    private static Path getPathArquivo() {
+        return Paths.get(Paths.get("").toAbsolutePath().toString() + "\\" + "estoque.txt");
+    }
+
+    private static void salvaEstoque() {
+        Path path = getPathArquivo();
+        // Usa o bloco try para capturar as exceções de arquivo (será visto mais adiante)
+        // Usa a classe "PrintWriter" para escrever no arquivo
+        // A classe "PrintWirter" usa a variavel "path" para localizar onde escrever os dados
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8))) {
+            List<ItemDeEstoque> itens = estoque.getItens();
+            for (int i = 0; i < itens.size() - 1; i++) {
+                writer.write(itens.get(i).toSaveLine());
+                writer.write("\n");
+            }
+            writer.write(itens.get(itens.size() - 1).toSaveLine());
 
         } catch (IOException x) {
             System.err.format("Erro de E/S: %s%n", x);
